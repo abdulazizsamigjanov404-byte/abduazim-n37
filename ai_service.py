@@ -12,12 +12,13 @@ logger = logging.getLogger(__name__)
 user_histories: Dict[int, List[dict]] = defaultdict(list)
 MAX_HISTORY_MESSAGES = 10
 
-# Birlamchi va ehtiyot modellari ro'yxati (biri band bo'lsa, keyingisi ishlaydi)
+# Birlamchi va ehtiyot modellari ro'yxati (eng tezkor va barqarorlari boshida)
 GEMINI_MODELS = [
+    "gemini-3-flash-preview",
+    "gemini-3.1-flash-lite",
     "gemini-3.5-flash",
     "gemini-3.7-flash",
     "gemini-3.8-flash",
-    "gemini-3.1-flash-lite",
 ]
 
 SYSTEM_PROMPT = (
