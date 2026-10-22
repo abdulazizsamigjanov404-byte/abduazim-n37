@@ -7,6 +7,7 @@ load_dotenv()
 
 # Asosiy bot sozlamalari
 BOT_TOKEN = os.getenv("BOT_TOKEN", "").strip()
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "").strip()
 
 # Loyihaning asosiy papkasi
 BASE_DIR = Path(__file__).resolve().parent

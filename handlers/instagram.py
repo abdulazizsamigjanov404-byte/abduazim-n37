@@ -9,6 +9,7 @@ from downloader import (
     DownloadError,
     VideoTooLargeError,
 )
+from ai_service import ask_gemini_ai
 
 logger = logging.getLogger(__name__)
 router = Router()
@@ -99,13 +100,34 @@ async def handle_instagram_link(message: types.Message, bot: Bot):
 
 
 @router.message()
-async def handle_other_messages(message: types.Message):
+async def handle_ai_chat(message: types.Message, bot: Bot):
     """
-    Instagram havolasi bo'lmagan boshqa har qanday xabar uchun yo'l ko'rsatuvchi handler.
+    Instagram havolasi bo'lmagan barcha matnli xabarlarni
+    aqlli AI suhbatchiga yo'naltiruvchi handler.
     """
-    await message.answer(
-        "🤔 <b>Men faqat Instagram havolalarini tushunaman!</b>\n\n"
-        "Menga Instagram’dagi Reels, Post yoki Video havolasini yuboring.\n"
-        "<i>Misol: https://www.instagram.com/reel/C...</i>",
-        parse_mode="HTML"
-    )
+    user_text = message.text
+    if not user_text:
+        return
+
+    user_id = message.from_user.id if message.from_user else message.chat.id
+
+    # Telegramda "yozmoqda..." harakatini ko'rsatish
+    await bot.send_chat_action(chat_id=message.chat.id, action=ChatAction.TYPING)
+
+    # Gemini AI dan javob olish
+    reply = await ask_gemini_ai(user_id=user_id, user_message=user_text)
+
+    # Agar javob 4000 belgidan uzun bo'lsa, qismlarga bo'lib yuboramiz
+    MAX_LENGTH = 4000
+    if len(reply) <= MAX_LENGTH:
+        try:
+            await message.answer(reply, parse_mode="Markdown")
+        except Exception:
+            await message.answer(reply)
+    else:
+        for i in range(0, len(reply), MAX_LENGTH):
+            chunk = reply[i:i + MAX_LENGTH]
+            try:
+                await message.answer(chunk, parse_mode="Markdown")
+            except Exception:
+                await message.answer(chunk)
