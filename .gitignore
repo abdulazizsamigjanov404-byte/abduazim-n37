@@ -1,0 +1,28 @@
+# Muhit o'zgaruvchilari (Tokenlar sir saqlanadi)
+.env
+
+# Python kesh fayllari
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Virtual muhit
+venv/
+.venv/
+env/
+ENV/
+
+# Yuklab olingan vaqtinchalik videolar
+downloads/
+*.mp4
+*.m4a
+*.webm
+*.part
+*.ytdl
+
+# IDE va muharrir fayllari
+.vscode/
+.idea/
+*.swp
+*.log
