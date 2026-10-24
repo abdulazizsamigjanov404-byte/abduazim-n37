@@ -1,7 +1,9 @@
 import asyncio
 import logging
+import os
 import sys
 
+from aiohttp import web
 from aiogram import Bot, Dispatcher
 from aiogram.client.default import DefaultBotProperties
 from aiogram.enums import ParseMode
@@ -18,6 +20,25 @@ logging.basicConfig(
     ]
 )
 logger = logging.getLogger("InstagramBot")
+
+
+async def start_health_server():
+    """Render kabi hostinglar uchun PORT da oddiy HTTP javob beruvchi server"""
+    port = os.getenv("PORT")
+    if not port:
+        return None
+
+    async def health(request):
+        return web.Response(text="OK")
+
+    app = web.Application()
+    app.router.add_get("/", health)
+    app.router.add_get("/health", health)
+    runner = web.AppRunner(app)
+    await runner.setup()
+    await web.TCPSite(runner, "0.0.0.0", int(port)).start()
+    logger.info(f"Health server {port}-portda ishga tushdi")
+    return runner
 
 
 async def main():
@@ -54,11 +75,15 @@ async def main():
     # Bot o'chirilgan vaqtda kelgan eski xabarlarni o'tkazib yuborish (drop_pending_updates)
     await bot.delete_webhook(drop_pending_updates=True)
 
+    health_runner = await start_health_server()
+
     try:
         logger.info("Xabarlarni qabul qilish boshlandi (Polling)...")
         await dp.start_polling(bot, allowed_updates=dp.resolve_used_update_types())
     finally:
         logger.info("Bot to'xtatilmoqda...")
+        if health_runner:
+            await health_runner.cleanup()
         await bot.session.close()
 
 
