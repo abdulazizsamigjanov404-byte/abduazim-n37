@@ -1,12 +1,12 @@
 # 🎬 Instagram Video Downloader Telegram Bot
 
-Zamonaviy va professional arxitekturada yaratilgan Telegram boti. Instagram'dagi **Reels**, **Post**, **Video** va **IGTV** havolalarini qabul qilib, ularni to'g'ridan-to'g'ri foydalanuvchiga tayyor video (`.mp4`) holatida yuklab beradi.
+Zamonaviy va professional arxitekturada yaratilgan Telegram boti. Instagram'dagi **Reels**, **Post**, **Video** va **IGTV** havolalarini qabul qilib, ularni yuklab olib, foydalanuvchiga Telegram'ning dumaloq video (video note) ko'rinishida va alohida MP3 musiqa qilib yuboradi.
 
 ---
 
 ## ✨ Imkoniyatlari va Afzalliklari
 
-- 🧠 **Google Gemini AI Suhbatchi**: Foydalanuvchilar bilan sun'iy intellekt orqali o'zbek va boshqa tillarda erkin suhbatlashadi, savollarga javob beradi va kontekstni (suhbat xotirasini) eslab qoladi.
+- ⭕ **Dumaloq video + Musiqa**: Video `ffmpeg` yordamida 640x640 kvadratga qirqilib, 60 soniyagacha dumaloq video qilib yuboriladi, so'ng Reels musiqasi to'liq MP3 fayl sifatida jo'natiladi.
 - ⚡️ **Asinxron va Tezkor**: `aiogram 3.x` va `asyncio.to_thread` orqali to'liq asinxron ishlaydi, bot bir nechta foydalanuvchiga bir vaqtning o'zida parallel xizmat ko'rsata oladi.
 - 🎯 **Keng qamrovli yuklash**: `yt-dlp` kutubxonasi yordamida Reels, Post, IGTV hamda qisqa ulashish havolalari (`/share/`, `/reel/`, `/p/`) bilan mukammal ishlaydi.
 - 🧹 **Avtomatik Disk Tozalash**: Video yuborilgach yoki xatolik yuz berganda serverdagi vaqtinchalik video fayl avtomatik o'chiriladi. Diskda keraksiz fayllar to'planib qolmaydi.
