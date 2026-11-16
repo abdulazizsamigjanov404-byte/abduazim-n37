@@ -3,3 +3,4 @@ yt-dlp>=2024.12.0
 python-dotenv>=1.0.1
 aiohttp>=3.10.0
 aiofiles>=24.1.0
+shazamio>=0.6.0

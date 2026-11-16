@@ -1,3 +1,4 @@
+import html
 import logging
 import uuid
 from aiogram import Router, types, Bot, F
@@ -19,6 +20,7 @@ from converter import (
     VIDEO_NOTE_SIZE,
     VIDEO_NOTE_MAX_DURATION,
 )
+from music import recognize_song, download_full_song
 
 logger = logging.getLogger(__name__)
 router = Router()
@@ -171,8 +173,11 @@ async def process_to_note(callback_query: types.CallbackQuery, bot: Bot):
 
 @router.callback_query(F.data == "to_audio")
 async def process_to_audio(callback_query: types.CallbackQuery, bot: Bot):
-    """Videodagi musiqani MP3 qilib yuboradi."""
-    src = audio_path = None
+    """
+    Videodagi qo'shiqni aniqlab, uning to'liq versiyasini MP3 qilib yuboradi.
+    Qo'shiq aniqlanmasa yoki topilmasa, videoning o'z ovozini yuboradi.
+    """
+    src = audio_path = song_path = None
     try:
         result = await _download_attached_video(callback_query, bot)
         if not result:
@@ -183,6 +188,26 @@ async def process_to_audio(callback_query: types.CallbackQuery, bot: Bot):
         await bot.send_chat_action(chat_id=message.chat.id, action=ChatAction.UPLOAD_VOICE)
         audio_path = await extract_audio(src)
 
+        song = await recognize_song(audio_path)
+        if song:
+            try:
+                song_path = await download_full_song(song)
+                await message.answer_audio(
+                    audio=FSInputFile(song_path, filename=f"{song.artist} - {song.title}.mp3"),
+                    title=song.title,
+                    performer=song.artist or None,
+                )
+                return
+            except Exception as e:
+                logger.warning(f"To'liq qo'shiqni yuklab bo'lmadi: {e}")
+                note = (
+                    f"🎵 Qo'shiq: <b>{html.escape(song.artist)} — {html.escape(song.title)}</b>\n"
+                    "To'liq versiyasini yuklab bo'lmadi, videodagi ovozni yubordim."
+                )
+        else:
+            note = "🔍 Qo'shiqni aniqlab bo'lmadi, videodagi ovozni yubordim."
+
+        await message.answer(note, parse_mode="HTML")
         await message.answer_audio(
             audio=FSInputFile(audio_path, filename="instagram_music.mp3"),
             title="Instagram Reels musiqasi",
@@ -194,7 +219,7 @@ async def process_to_audio(callback_query: types.CallbackQuery, bot: Bot):
         logger.exception(f"Musiqani ajratishda xatolik: {e}")
         await callback_query.message.answer("❌ Musiqani ajratishda xatolik yuz berdi.")
     finally:
-        _remove_files(src, audio_path)
+        _remove_files(src, audio_path, song_path)
 
 
 @router.message()
