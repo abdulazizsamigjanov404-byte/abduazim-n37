@@ -45,7 +45,9 @@ def _sync_to_video_note(src: Path) -> Path:
             "crop='min(iw,ih)':'min(iw,ih)',"
             f"scale={VIDEO_NOTE_SIZE}:{VIDEO_NOTE_SIZE},setsar=1"
         ),
-        "-c:v", "libx264", "-preset", "veryfast", "-crf", "26", "-pix_fmt", "yuv420p",
+        # Bepul serverda CPU va xotira kam: tez preset va cheklangan oqimlar
+        "-c:v", "libx264", "-preset", "ultrafast", "-crf", "28", "-pix_fmt", "yuv420p",
+        "-threads", "2",
         "-c:a", "aac", "-b:a", "96k",
         "-movflags", "+faststart",
     ], src.with_name(f"{src.stem}_note.mp4"))

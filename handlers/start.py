@@ -17,9 +17,10 @@ async def cmd_start(message: types.Message):
 
     text = (
         f"👋 <b>Assalomu alaykum, {user_name}!</b>\n\n"
-        "🎬 <b>Instagram → Dumaloq video + Musiqa</b> botiga xush kelibsiz!\n\n"
+        "🎬 <b>Instagram Video Downloader</b> botiga xush kelibsiz!\n\n"
         "📥 Menga Instagram'dagi istalgan Reels, Post yoki Video havolasini yuboring — "
-        "uni dumaloq video ko'rinishida va alohida MP3 musiqa qilib qaytaraman.\n\n"
+        "videoni yuklab beraman. Video ostidagi tugmalar orqali uni dumaloq video "
+        "qilish yoki musiqasini MP3 qilib olish mumkin.\n\n"
         "<i>Boshlash uchun Instagram havolasini tashlang! 🚀</i>"
     )
 
@@ -34,9 +35,10 @@ async def cmd_help(message: types.Message):
     text = (
         "📖 <b>Botdan foydalanish bo'yicha qo'llanma:</b>\n\n"
         "• Instagram ilovasidan video havolasini nusxalang va botga jo'nating.\n"
-        "• Bot videoni dumaloq video qilib, keyin uning musiqasini MP3 qilib yuboradi.\n"
-        "• Dumaloq video 60 soniyadan oshmaydi: uzunroq videodan faqat boshidagi 60 soniya olinadi, "
-        "musiqa esa to'liq yuboriladi.\n\n"
+        "• Bot videoni oddiy video qilib yuboradi.\n"
+        "• <b>⭕ Dumaloq qilish</b> tugmasi videoni dumaloq video ko'rinishiga keltiradi "
+        "(60 soniyadan uzun bo'lsa, faqat boshidagi 60 soniya olinadi).\n"
+        "• <b>🎵 Musiqa</b> tugmasi video musiqasini MP3 qilib yuboradi.\n\n"
         "🧹 <b>Buyruqlar:</b>\n"
         "/start — Botni ishga tushirish\n"
         "/help — Qo'llanma"
