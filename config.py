@@ -18,3 +18,6 @@ DOWNLOAD_DIR.mkdir(parents=True, exist_ok=True)
 
 # Telegram orqali yuborish mumkin bo'lgan maksimal hajm (50 MB)
 MAX_FILE_SIZE = int(os.getenv("MAX_FILE_SIZE", 50 * 1024 * 1024))
+
+# Admin panel (/admin) faqat shu Telegram ID uchun ishlaydi. Statistika fayli ham shu chatda saqlanadi.
+ADMIN_ID = int(os.getenv("ADMIN_ID", "0").strip() or 0)

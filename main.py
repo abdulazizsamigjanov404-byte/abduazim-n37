@@ -10,6 +10,7 @@ from aiogram.enums import ParseMode
 
 from config import BOT_TOKEN
 from handlers import router as main_router
+from stats import StatsMiddleware, stats
 
 # Log tizimini sozlash
 logging.basicConfig(
@@ -81,6 +82,7 @@ async def main():
 
     # Routerlarni ulash
     dp.include_router(main_router)
+    dp.update.outer_middleware(StatsMiddleware())
 
     # Bot ma'lumotlarini olish va logga yozish
     try:
@@ -97,12 +99,18 @@ async def main():
     health_runner = await start_health_server()
     pinger = asyncio.create_task(keep_awake())
 
+    # Statistikani Telegram'dagi pin qilingan fayldan yuklash va vaqti-vaqti bilan saqlash
+    await stats.load(bot)
+    saver = asyncio.create_task(stats.autosave(bot))
+
     try:
         logger.info("Xabarlarni qabul qilish boshlandi (Polling)...")
         await dp.start_polling(bot, allowed_updates=dp.resolve_used_update_types())
     finally:
         logger.info("Bot to'xtatilmoqda...")
         pinger.cancel()
+        saver.cancel()
+        await stats.save(bot)
         if health_runner:
             await health_runner.cleanup()
         await bot.session.close()
