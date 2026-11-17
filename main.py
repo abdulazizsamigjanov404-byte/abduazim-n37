@@ -3,7 +3,7 @@ import logging
 import os
 import sys
 
-from aiohttp import web
+from aiohttp import ClientSession, ClientTimeout, web
 from aiogram import Bot, Dispatcher
 from aiogram.client.default import DefaultBotProperties
 from aiogram.enums import ParseMode
@@ -41,6 +41,25 @@ async def start_health_server():
     return runner
 
 
+async def keep_awake():
+    """Render bepul tarifida 15 daqiqa so'rov kelmasa servis uxlab qoladi.
+    Har 10 daqiqada o'zining tashqi manziliga so'rov yuborib, botni uyg'oq ushlaydi.
+    RENDER_EXTERNAL_URL ni Render o'zi beradi; kompyuterda bu funksiya hech narsa qilmaydi."""
+    url = os.getenv("RENDER_EXTERNAL_URL")
+    if not url:
+        return
+    url = url.rstrip("/") + "/health"
+    await asyncio.sleep(60)
+    async with ClientSession(timeout=ClientTimeout(total=30)) as session:
+        while True:
+            try:
+                async with session.get(url) as resp:
+                    logger.info(f"Keep-alive ping: {resp.status}")
+            except Exception as e:
+                logger.warning(f"Keep-alive ping xatosi: {e}")
+            await asyncio.sleep(600)
+
+
 async def main():
     """Botni ishga tushiruvchi asosiy funksiya"""
     if not BOT_TOKEN or BOT_TOKEN == "YOUR_BOT_TOKEN_HERE":
@@ -76,12 +95,14 @@ async def main():
     await bot.delete_webhook(drop_pending_updates=True)
 
     health_runner = await start_health_server()
+    pinger = asyncio.create_task(keep_awake())
 
     try:
         logger.info("Xabarlarni qabul qilish boshlandi (Polling)...")
         await dp.start_polling(bot, allowed_updates=dp.resolve_used_update_types())
     finally:
         logger.info("Bot to'xtatilmoqda...")
+        pinger.cancel()
         if health_runner:
             await health_runner.cleanup()
         await bot.session.close()
