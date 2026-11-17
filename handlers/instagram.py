@@ -76,9 +76,15 @@ async def handle_instagram_link(message: types.Message, bot: Bot):
         download_result = await download_instagram_video(url)
 
         # Videoni foydalanuvchiga tugmalar bilan jo'natish
+        # Asl havola caption'da link sifatida turadi: video 20 MB dan katta bo'lsa,
+        # tugma bosilganda bot uni Telegram'dan emas, shu havola orqali qayta yuklaydi.
         await message.answer_video(
             video=FSInputFile(download_result.file_path),
-            caption="🎬 Dumaloq video yoki musiqa kerak bo'lsa, pastdagi tugmani bosing.",
+            caption=(
+                "🎬 Dumaloq video yoki musiqa kerak bo'lsa, pastdagi tugmani bosing.\n"
+                f'<a href="{html.escape(url, quote=True)}">🔗 Instagram</a>'
+            ),
+            parse_mode="HTML",
             duration=download_result.duration,
             width=download_result.width,
             height=download_result.height,
@@ -114,6 +120,14 @@ async def handle_instagram_link(message: types.Message, bot: Bot):
             _remove_files(download_result.file_path)
 
 
+def _source_url(message: types.Message):
+    """Video caption'idagi asl Instagram havolasini qaytaradi."""
+    for entity in message.caption_entities or []:
+        if entity.type == "text_link" and entity.url and extract_instagram_url(entity.url):
+            return entity.url
+    return None
+
+
 async def _download_attached_video(callback_query: types.CallbackQuery, bot: Bot):
     """
     Tugma bosilgan xabardagi videoni Telegram serveridan qayta yuklab oladi.
@@ -126,11 +140,22 @@ async def _download_attached_video(callback_query: types.CallbackQuery, bot: Bot
         return None
 
     if video.file_size and video.file_size > TELEGRAM_GET_FILE_LIMIT:
-        await callback_query.answer(
-            "Video 20 MB dan katta, Telegram botga uni qayta ishlashga ruxsat bermaydi.",
-            show_alert=True,
-        )
-        return None
+        # Telegram botlarga 20 MB dan katta faylni yuklab olishga ruxsat bermaydi,
+        # shuning uchun videoni caption'dagi asl havola orqali Instagram'dan qayta yuklaymiz.
+        source_url = _source_url(message)
+        if not source_url:
+            await callback_query.answer(
+                "Video 20 MB dan katta. Instagram havolasini qaytadan yuboring, keyin tugmani bosing.",
+                show_alert=True,
+            )
+            return None
+        await callback_query.answer("⏳ Tayyorlanmoqda, biroz kuting...")
+        try:
+            result = await download_instagram_video(source_url)
+        except (DownloadError, VideoTooLargeError) as e:
+            await message.answer(f"⚠️ Videoni qayta yuklab bo'lmadi: {html.escape(str(e), quote=False)}", parse_mode="HTML")
+            return None
+        return video, result.file_path
 
     await callback_query.answer("⏳ Tayyorlanmoqda, biroz kuting...")
     src = DOWNLOAD_DIR / f"{uuid.uuid4().hex}.mp4"
