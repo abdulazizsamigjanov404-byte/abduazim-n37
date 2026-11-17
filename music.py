@@ -11,10 +11,13 @@ from config import DOWNLOAD_DIR
 
 logger = logging.getLogger(__name__)
 
-# To'liq qo'shiq qidiriladigan manbalar (birinchisi ishlamasa keyingisi sinaladi)
-SEARCH_SOURCES = ["ytsearch1:", "scsearch1:"]
+# To'liq qo'shiq qidiriladigan manba. YouTube Render kabi bulut serverlarini
+# bloklaydi va har urinish vaqtni behuda oladi, shuning uchun faqat SoundCloud.
+SEARCH_SOURCE = "scsearch3:"
 
-# Juda uzun natijalarni (mikslar, jonli efirlar) o'tkazib yuborish uchun (soniya)
+# 60 soniyadan qisqa natijalar odatda pullik qo'shiqlarning 30 soniyalik parchasi,
+# 15 daqiqadan uzunlari esa mikslar yoki jonli efirlar (soniya)
+MIN_SONG_DURATION = 60
 MAX_SONG_DURATION = 15 * 60
 
 
@@ -55,12 +58,16 @@ def _sync_download_song(song: SongInfo) -> Path:
 
     ydl_opts = {
         "outtmpl": str(DOWNLOAD_DIR / f"{task_id}_song.%(ext)s"),
-        "format": "bestaudio/best",
+        # Tayyor MP3 bo'lsa uni olamiz: kuchsiz serverda qayta kodlash sekin
+        "format": "bestaudio[ext=mp3]/bestaudio/best",
         "noplaylist": True,
+        "max_downloads": 1,
         "quiet": True,
         "no_warnings": True,
         "socket_timeout": 30,
-        "match_filter": yt_dlp.utils.match_filter_func(f"duration < {MAX_SONG_DURATION}"),
+        "match_filter": yt_dlp.utils.match_filter_func(
+            f"duration > {MIN_SONG_DURATION} & duration < {MAX_SONG_DURATION}"
+        ),
         "postprocessors": [{
             "key": "FFmpegExtractAudio",
             "preferredcodec": "mp3",
@@ -68,22 +75,22 @@ def _sync_download_song(song: SongInfo) -> Path:
         }],
     }
 
-    last_error = None
-    for source in SEARCH_SOURCES:
-        try:
-            with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-                ydl.extract_info(f"{source}{query}", download=True)
-            matches = list(DOWNLOAD_DIR.glob(f"{task_id}_song*.mp3"))
-            if matches:
-                return matches[0]
-        except Exception as e:
-            last_error = e
-            logger.warning(f"{source} orqali qo'shiqni yuklab bo'lmadi: {e}")
-        # Keyingi manbaga o'tishdan oldin chala fayllarni tozalaymiz
-        for leftover in DOWNLOAD_DIR.glob(f"{task_id}_song*"):
-            leftover.unlink(missing_ok=True)
+    try:
+        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+            ydl.extract_info(f"{SEARCH_SOURCE}{query}", download=True)
+    except yt_dlp.utils.MaxDownloadsReached:
+        # Birinchi mos qo'shiq yuklangach qidiruv shu xato bilan to'xtaydi
+        pass
+    except Exception as e:
+        logger.warning(f"Qo'shiqni yuklab bo'lmadi: {e}")
 
-    raise RuntimeError(f"Qo'shiq hech bir manbadan topilmadi: {last_error}")
+    matches = list(DOWNLOAD_DIR.glob(f"{task_id}_song*.mp3"))
+    if matches:
+        return matches[0]
+
+    for leftover in DOWNLOAD_DIR.glob(f"{task_id}_song*"):
+        leftover.unlink(missing_ok=True)
+    raise RuntimeError(f"To'liq qo'shiq topilmadi: {query}")
 
 
 async def download_full_song(song: SongInfo) -> Path:

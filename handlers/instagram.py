@@ -177,7 +177,7 @@ async def process_to_audio(callback_query: types.CallbackQuery, bot: Bot):
     Videodagi qo'shiqni aniqlab, uning to'liq versiyasini MP3 qilib yuboradi.
     Qo'shiq aniqlanmasa yoki topilmasa, videoning o'z ovozini yuboradi.
     """
-    src = audio_path = song_path = None
+    src = audio_path = song_path = status_msg = None
     try:
         result = await _download_attached_video(callback_query, bot)
         if not result:
@@ -185,12 +185,20 @@ async def process_to_audio(callback_query: types.CallbackQuery, bot: Bot):
         video, src = result
         message = callback_query.message
 
+        # Jarayon bir necha o'n soniya olishi mumkin, foydalanuvchiga bosqichlarni ko'rsatamiz
+        status_msg = await message.answer("🔍 Qo'shiq aniqlanmoqda...")
         await bot.send_chat_action(chat_id=message.chat.id, action=ChatAction.UPLOAD_VOICE)
         audio_path = await extract_audio(src)
 
         song = await recognize_song(audio_path)
         if song:
             try:
+                await status_msg.edit_text(
+                    f"🎵 Topildi: <b>{html.escape(song.artist)} — {html.escape(song.title)}</b>\n"
+                    "⏳ To'liq versiyasi yuklanmoqda...",
+                    parse_mode="HTML",
+                )
+                await bot.send_chat_action(chat_id=message.chat.id, action=ChatAction.UPLOAD_VOICE)
                 song_path = await download_full_song(song)
                 await message.answer_audio(
                     audio=FSInputFile(song_path, filename=f"{song.artist} - {song.title}.mp3"),
@@ -219,6 +227,11 @@ async def process_to_audio(callback_query: types.CallbackQuery, bot: Bot):
         logger.exception(f"Musiqani ajratishda xatolik: {e}")
         await callback_query.message.answer("❌ Musiqani ajratishda xatolik yuz berdi.")
     finally:
+        if status_msg:
+            try:
+                await status_msg.delete()
+            except Exception:
+                pass
         _remove_files(src, audio_path, song_path)
 
 
